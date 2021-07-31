@@ -1,46 +1,135 @@
-# Getting Started with Create React App
+# react学习文档-项目初始化
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## 初始化
 
-## Available Scripts
+### a. 新建项目
 
-In the project directory, you can run:
+~~~bash
+npx create-react-app demo01
+cd demo01
+npm install
+~~~
 
-### `yarn start`
+### b. 运行项目
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+~~~bash
+yarn start
+~~~
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+### c. ant-design
 
-### `yarn test`
+~~~bash
+yarn add antd
+~~~
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### d. react-app-rewired
 
-### `yarn build`
+> `react-app-rewired` 2.x 之后`addLessLoader`配置项更改了：
+>
+> [`addLessLoader` issue](https://github.com/arackaf/customize-cra/issues/253)
+>
+> [`react-app-rewired` 文档](https://github.com/arackaf/customize-cra)
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+~~~bash
+yarn add less less-loader --dev
+yarn add react-app-rewired customize-cra babel-plugin-import --dev
+~~~
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+根目录添加`config-overrides.js` :
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+~~~js
+const {
+  override,
+  addLessLoader,
+  fixBabelImports
+} = require('customize-cra');
 
-### `yarn eject`
+module.exports = override(
+  fixBabelImports('import', {
+    libraryName: 'antd',
+    libraryDirectory: 'es',
+    style: true,
+  }),
+  addLessLoader({
+    lessOptions: {
+      javascriptEnabled: true,
+      modifyVars: { '@primary-color': '#007fff' },
+    },
+  })
+);
+~~~
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+修改`package.json` :
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+~~~json
+{
+  "scripts": {
+      "start": "react-app-rewired start",
+      "build": "react-app-rewired build",
+      "test": "react-app-rewired test",
+      "eject": "react-script eject"
+    }
+}
+~~~
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+### e.  编译进度条&source-map
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+~~~bash
+yarn add progress-bar-webpack-plugin chalk --dev
+~~~
 
-## Learn More
+修改`config-overrides.js` :
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+~~~js
+const {
+  override,
+  fixBabelImports,
+  addLessLoader,
+  addWebpackPlugin,
+  adjustStyleLoaders,
+  addDecoratorsLegacy,
+} = require('customize-cra');
+const ProgressBarPlugin = require('progress-bar-webpack-plugin');
+const chalk = require('chalk');
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+// 关闭source-map
+// process.env.GENERATE_SOURCEMAP = 'false';
+const rewiredMap = () => config => {
+  config.devtool = config.mode === 'development' ? 'cheap-module-source-map' : false;
+  return config;
+};
+
+module.exports = override(
+  // 关闭mapSource
+  rewiredMap(),
+  addDecoratorsLegacy(),
+  fixBabelImports('import', {
+    libraryName: 'antd',
+    libraryDirectory: 'es',
+    style: true,
+  }),
+  addLessLoader({
+    lessOptions: {
+      javascriptEnabled: true,
+      modifyVars: { '@primary-color': '#007fff' },
+    },
+  }),
+  addWebpackPlugin(
+    new ProgressBarPlugin({
+      complete: '█',
+      format: `${chalk.green('Building')} [ ${chalk.green(':bar')} ] ${chalk.bold(':percent')}`,
+      clear: true,
+    })
+  ),
+  adjustStyleLoaders(rule => {
+    if (rule.test.toString().includes('scss')) {
+      rule.use.push({
+        loader: require.resolve('sass-resources-loader'),
+        options: {
+          resources: './src/style/index.scss', //全局引入scss
+        },
+      });
+    }
+  })
+);
+~~~

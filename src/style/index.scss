@@ -1,0 +1,36 @@
+$redTheme: #ff4444;
+$blueTheme: #007fff;
+$greenTheme: #00ff7f;
+
+@mixin colorTheme($color) {
+  color: $color;
+  border-color: $color;
+}
+
+:global {
+  .redTheme {
+    @include colorTheme($redTheme);
+  }
+
+  .blueTheme {
+    @include colorTheme($blueTheme);
+  }
+
+  .greenTheme {
+    @include colorTheme($greenTheme);
+  }
+
+  .border-red {
+    padding: 12px;
+    border: 1px solid;
+    @include colorTheme($redTheme);
+  }
+
+  .h10 {
+    height: 10px;
+  }
+
+  .pd10 {
+    padding: 10px;
+  }
+}
